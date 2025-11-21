@@ -1,0 +1,200 @@
+.app {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.game-box {
+  position: relative;
+  background: linear-gradient(to bottom, #87CEEB 0%, #87CEEB 70%, #90EE90 70%, #90EE90 100%);
+  border: 4px solid #333;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Player Styles */
+.player {
+  position: absolute;
+  z-index: 10;
+  transition: none;
+}
+
+.player-inner {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.player-inner::before {
+  content: '';
+  position: absolute;
+  top: 25%;
+  left: 30%;
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+}
+
+.player-inner::after {
+  content: '';
+  position: absolute;
+  top: 25%;
+  right: 30%;
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+}
+
+/* Obstacle Styles */
+.obstacle {
+  position: absolute;
+  z-index: 5;
+}
+
+.obstacle-inner {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+  border: 3px solid #2c7873;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.obstacle-top {
+  border-radius: 0 0 10px 10px;
+}
+
+.obstacle-bottom {
+  border-radius: 10px 10px 0 0;
+}
+
+/* Ground Styles */
+.ground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 20px;
+  background: linear-gradient(to bottom, #8b4513 0%, #654321 100%);
+  border-top: 3px solid #5a3a1a;
+  z-index: 1;
+}
+
+/* Score Display */
+.score-display {
+  font-size: 32px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Controls Info */
+.controls-info {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 15px 20px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  text-align: center;
+}
+
+.controls-title {
+  font-weight: bold;
+  font-size: 18px;
+  margin: 0 0 8px 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.controls-info p {
+  margin: 4px 0;
+  font-size: 14px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Overlay Styles */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.overlay-dark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.overlay-content {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 40px;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.overlay-title {
+  font-size: 36px;
+  font-weight: bold;
+  color: white;
+  margin: 0 0 20px 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.overlay-title-large {
+  font-size: 48px;
+  font-weight: bold;
+  color: white;
+  margin: 0 0 20px 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.overlay-text {
+  font-size: 18px;
+  color: white;
+  margin: 10px 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.overlay-text-large {
+  font-size: 28px;
+  color: white;
+  margin: 10px 0;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
