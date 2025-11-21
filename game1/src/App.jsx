@@ -6,6 +6,18 @@ import ScoreDisplay from '../Components/Score';
 import ControlsInfo from '../Components/controls';
 import StartScreen from '../Components/screen';
 import GameOverScreen from '../Components/Gameover';
+import Particles from '../Components/Particles';
+import Trail from '../Components/Trail';
+import Clouds from '../Components/Clouds';
+import Stars from '../Components/Stars';
+import Collectibles from '../Components/Collectibles';
+import FloatingText, { useFloatingText } from '../Components/FloatingText';
+import BackgroundElements from '../Components/BackgroundElements';
+import { useParticles } from '../Hooks/useParticles';
+import { useScreenShake } from '../Hooks/useScreenShake';
+import { useTrail } from '../Hooks/useTrail';
+import { useHighScore } from '../Hooks/useHighScore';
+import { useParallax } from '../Hooks/useParallax';
 import './App.css';
 
 const GAME_WIDTH = 800;
@@ -17,7 +29,7 @@ const GRAVITY = 0.5;
 const JUMP_STRENGTH = -12;
 const OBSTACLE_WIDTH = 60;
 const OBSTACLE_SPEED = 3;
-const GAP_SIZE = 150;
+const GAP_SIZE = 220;
 const OBSTACLE_SPACING = 300;
 const HORIZONTAL_SPEED = 5;
 const GROUND_HEIGHT = 20;
@@ -30,10 +42,23 @@ function App() {
   const [obstacles, setObstacles] = useState([]);
   const [score, setScore] = useState(0);
   const [passedObstacles, setPassedObstacles] = useState(new Set());
+  const [isNewHighScore, setIsNewHighScore] = useState(false);
+  const [collectibleScore, setCollectibleScore] = useState(0);
+  const [comboCount, setComboCount] = useState(0);
   
   const gameLoopRef = useRef(null);
   const obstacleIdRef = useRef(0);
   const keysPressed = useRef(new Set());
+  const lastScoreRef = useRef(0);
+  const comboTimeoutRef = useRef(null);
+
+  // Custom hooks
+  const { particles, addParticles } = useParticles();
+  const { shake, triggerShake } = useScreenShake();
+  const trail = useTrail(playerX + PLAYER_SIZE / 2, playerY + PLAYER_SIZE / 2, gameState === 'playing');
+  const { highScore, updateHighScore } = useHighScore();
+  const parallaxOffset = useParallax(0.3, gameState);
+  const { texts: floatingTexts, addText: addFloatingText } = useFloatingText();
 
   // Initialize obstacles
   useEffect(() => {
@@ -131,12 +156,20 @@ function App() {
 
       // Check ground collision
       if (playerY + PLAYER_SIZE >= GAME_HEIGHT - GROUND_HEIGHT) {
-        setGameState('gameover');
+        triggerShake(15, 400);
+        setTimeout(() => {
+          updateHighScore(score);
+          setGameState('gameover');
+        }, 200);
         return;
       }
 
       if (collision) {
-        setGameState('gameover');
+        triggerShake(15, 400);
+        setTimeout(() => {
+          updateHighScore(score);
+          setGameState('gameover');
+        }, 200);
         return;
       }
 
@@ -146,11 +179,60 @@ function App() {
         obstacles.forEach(obs => {
           if (!newPassed.has(obs.id) && obs.x + OBSTACLE_WIDTH < playerX) {
             newPassed.add(obs.id);
-            setScore(prev => prev + 1);
+            setScore(prev => {
+              const newScore = prev + 1;
+              // Add particles when scoring
+              addParticles(
+                playerX + PLAYER_SIZE / 2,
+                playerY + PLAYER_SIZE / 2,
+                15,
+                '#ffd700'
+              );
+              // Add floating text
+              addFloatingText(
+                playerX + PLAYER_SIZE / 2,
+                playerY,
+                '+1',
+                '#ffd700',
+                20
+              );
+              return newScore;
+            });
           }
         });
         return newPassed;
       });
+
+      // Check collectible collisions
+      if (window.gameCollectibles && window.gameCollectibles.length > 0) {
+        window.gameCollectibles.forEach((collectible, index) => {
+          const distance = Math.sqrt(
+            Math.pow(collectible.x - (playerX + PLAYER_SIZE / 2), 2) +
+            Math.pow(collectible.y - (playerY + PLAYER_SIZE / 2), 2)
+          );
+          
+          if (distance < PLAYER_SIZE / 2 + 15) {
+            const points = collectible.type === 'gold' ? 5 : 2;
+            setCollectibleScore(prev => prev + points);
+            setScore(prev => prev + points);
+            addParticles(
+              playerX + PLAYER_SIZE / 2,
+              playerY + PLAYER_SIZE / 2,
+              collectible.type === 'gold' ? 20 : 10,
+              collectible.type === 'gold' ? '#ffd700' : '#c0c0c0'
+            );
+            addFloatingText(
+              playerX + PLAYER_SIZE / 2,
+              playerY,
+              `+${points}`,
+              collectible.type === 'gold' ? '#ffd700' : '#c0c0c0',
+              24
+            );
+            // Remove from array
+            window.gameCollectibles = window.gameCollectibles.filter((_, i) => i !== index);
+          }
+        });
+      }
 
       gameLoopRef.current = requestAnimationFrame(gameLoop);
     };
@@ -181,6 +263,8 @@ function App() {
 
     if (gameState === 'gameover' && e.key.toLowerCase() === 'r') {
       e.preventDefault();
+      const wasNewHigh = updateHighScore(score);
+      setIsNewHighScore(false);
       setGameState('start');
       setPlayerY(PLAYER_START_Y);
       setPlayerX(PLAYER_START_X);
@@ -189,6 +273,7 @@ function App() {
       setScore(0);
       setPassedObstacles(new Set());
       keysPressed.current.clear();
+      lastScoreRef.current = 0;
       return;
     }
 
@@ -218,6 +303,15 @@ function App() {
     };
   }, [handleKeyDown, handleKeyUp]);
 
+  // Update high score when score changes
+  useEffect(() => {
+    if (score > lastScoreRef.current && score > 0) {
+      const isNewHigh = updateHighScore(score);
+      setIsNewHighScore(isNewHigh);
+      lastScoreRef.current = score;
+    }
+  }, [score, updateHighScore]);
+
   return (
     <div className="app">
       <div className="game-container">
@@ -225,10 +319,46 @@ function App() {
           className="game-box"
           style={{
             width: `${GAME_WIDTH}px`,
-            height: `${GAME_HEIGHT}px`
+            height: `${GAME_HEIGHT}px`,
+            transform: `translate(${shake.x}px, ${shake.y}px)`,
+            transition: shake.intensity > 0 ? 'none' : 'transform 0.1s ease-out'
           }}
         >
+          {/* Parallax Background */}
+          <div 
+            className="parallax-background"
+            style={{
+              backgroundPosition: `${parallaxOffset}% 0%`
+            }}
+          />
+          
+          {/* Background Elements */}
+          <BackgroundElements 
+            gameWidth={GAME_WIDTH} 
+            gameHeight={GAME_HEIGHT}
+            gameState={gameState}
+          />
+          
+          {/* Stars */}
+          <Stars 
+            gameWidth={GAME_WIDTH} 
+            gameHeight={GAME_HEIGHT}
+            gameState={gameState}
+          />
+          
+          {/* Clouds */}
+          <Clouds 
+            gameState={gameState}
+            gameWidth={GAME_WIDTH}
+            gameHeight={GAME_HEIGHT}
+          />
+          
           <Ground />
+          
+          {/* Player Trail */}
+          {gameState === 'playing' && (
+            <Trail trail={trail} playerSize={PLAYER_SIZE} />
+          )}
           
           {obstacles.map(obs => (
             <Obstacle
@@ -241,6 +371,19 @@ function App() {
             />
           ))}
           
+          {/* Collectibles */}
+          <Collectibles
+            gameState={gameState}
+            gameWidth={GAME_WIDTH}
+            gameHeight={GAME_HEIGHT}
+          />
+          
+          {/* Particles */}
+          <Particles particles={particles} />
+          
+          {/* Floating Text */}
+          <FloatingText texts={floatingTexts} />
+          
           <Player 
             x={playerX} 
             y={playerY} 
@@ -248,11 +391,15 @@ function App() {
           />
           
           {gameState === 'start' && <StartScreen />}
-          {gameState === 'gameover' && <GameOverScreen score={score} />}
+          {gameState === 'gameover' && <GameOverScreen score={score} highScore={highScore} />}
         </div>
         
         <div className="game-ui">
-          <ScoreDisplay score={score} />
+          <ScoreDisplay 
+            score={score} 
+            highScore={highScore}
+            isNewHighScore={isNewHighScore}
+          />
           <ControlsInfo />
         </div>
       </div>
